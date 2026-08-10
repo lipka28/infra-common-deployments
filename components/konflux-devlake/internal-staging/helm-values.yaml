@@ -90,8 +90,44 @@ grafana:
     runAsUser: null
   initChownData:
     enabled: false
-  envFromSecrets:
-    - name: "konflux-devlake-secrets"
+  envFromSecrets: []
+  envValueFrom:
+    MYSQL_USER:
+      secretKeyRef:
+        name: konflux-devlake-secrets
+        key: MYSQL_USER
+    MYSQL_PASSWORD:
+      secretKeyRef:
+        name: konflux-devlake-secrets
+        key: MYSQL_PASSWORD
+    MYSQL_SERVER:
+      secretKeyRef:
+        name: konflux-devlake-secrets
+        key: MYSQL_SERVER
+    MYSQL_PORT:
+      secretKeyRef:
+        name: konflux-devlake-secrets
+        key: MYSQL_PORT
+    MYSQL_DATABASE:
+      secretKeyRef:
+        name: konflux-devlake-secrets
+        key: MYSQL_DATABASE
+    GF_SERVER_ROOT_URL:
+      secretKeyRef:
+        name: konflux-devlake-secrets
+        key: GF_SERVER_ROOT_URL
+    GF_AUTH_GOOGLE_CLIENT_ID:
+      secretKeyRef:
+        name: konflux-devlake-secrets
+        key: GF_AUTH_GOOGLE_CLIENT_ID
+    GF_AUTH_GOOGLE_CLIENT_SECRET:
+      secretKeyRef:
+        name: konflux-devlake-secrets
+        key: GF_AUTH_GOOGLE_CLIENT_SECRET
+    MYSQL_URL:
+      secretKeyRef:
+        name: konflux-devlake-secrets
+        key: MYSQL_URL
   env:
     TZ: "UTC"
     GF_SERVER_SERVE_FROM_SUBPATH: "true"
@@ -110,6 +146,32 @@ grafana:
       allowed_domains: "redhat.com"
       allow_sign_up: true
       auto_login: false
+  datasources:
+    datasource.yml:
+      apiVersion: 1
+      datasources:
+        - name: mysql
+          type: mysql
+          url: $MYSQL_URL
+          database: $MYSQL_DATABASE
+          user: $MYSQL_USER
+          jsonData:
+            tlsAuth: false
+            tlsAuthWithCACert: true
+            tlsSkipVerify: false
+          secureJsonData:
+            password: $MYSQL_PASSWORD
+            tlsCACert: $__file{/etc/ssl/rds/rds-ca-bundle.pem}
+          editable: false
+  extraSecretMounts:
+    - name: rds-ca-certs
+      secretName: konflux-devlake-rds-ca
+      mountPath: /etc/ssl/rds
+      readOnly: true
+      defaultMode: 0440
+      items:
+        - key: AWS_RDS_CRTS
+          path: rds-ca-bundle.pem
 ui:
   image:
     repository: quay.io/konflux-ci/konflux-devprod/devlake-frontend
